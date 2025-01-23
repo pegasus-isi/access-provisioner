@@ -53,7 +53,7 @@ class Jetstream2:
                 continue
 
             # just stuck
-            if last_update < now - timedelta(days=2):
+            if last_update < now - timedelta(days=30):
                 # remove the server
                 print(f"Instance seems stuck, deleting server {server.name}")
                 self.cloud.delete_server(server.name)
@@ -113,9 +113,10 @@ condor_reconfig
 
         userdata = base64.b64encode(userdata.encode("utf-8")).decode("utf-8")
 
-        image = self.cloud.image.find_image("ACCESS-Pegasus-Worker")
+        #image = self.cloud.image.find_image("ACCESS-Pegasus-Worker", ignore_missing=False)
+        image = self.cloud.image.find_image("0e4bb22d-a706-4b25-9af2-ae2bff308ace", ignore_missing=False)
         flavor = self.cloud.compute.find_flavor(flavor)
-        network = self.cloud.network.find_network("testpool_workers")
+        network = self.cloud.network.find_network("auto_allocated_network")
         keypair = self.cloud.compute.find_keypair("rynge-2020")
 
         # need to reuse a floating IP
@@ -134,7 +135,7 @@ condor_reconfig
             image_id=image.id,
             flavor_id=flavor.id,
             networks=[{"uuid": network.id}],
-            security_groups=[{"name": "access-pegasus"}],
+            security_groups=[{"name": "default"}],
             key_name=keypair.name,
             user_data=userdata,
             wait=True
