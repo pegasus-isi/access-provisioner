@@ -114,7 +114,7 @@ condor_reconfig
         userdata = base64.b64encode(userdata.encode("utf-8")).decode("utf-8")
 
         #image = self.cloud.image.find_image("ACCESS-Pegasus-Worker", ignore_missing=False)
-        image = self.cloud.image.find_image("0e4bb22d-a706-4b25-9af2-ae2bff308ace", ignore_missing=False)
+        image = self.cloud.image.find_image("98d9a658-9202-44c0-96d7-835c0f6fedda", ignore_missing=False)
         flavor = self.cloud.compute.find_flavor(flavor)
         network = self.cloud.network.find_network("auto_allocated_network")
         keypair = self.cloud.compute.find_keypair("rynge-2020")
