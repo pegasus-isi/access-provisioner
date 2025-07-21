@@ -99,6 +99,9 @@ START = {start}
 # advertise that is is the testpool
 TestPool = True
 STARTD_ATTRS = TestPool \$(STARTD_ATTRS)
+
+# For workshops, keep resources around for longer
+STARTD_NOCLAIM_SHUTDOWN = 2 * 60 * 60
 EOF
 
 cat >/etc/condor/tokens.d/access-pegasus.token <<EOF
