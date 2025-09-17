@@ -49,7 +49,7 @@ class HTCondor:
         try:
             schedd_ad = self.collector.locate(htcondor.DaemonTypes.Schedd, "pegasus.access-ci.org")
             schedd = htcondor.Schedd(schedd_ad)
-            self.idle_job_ads = schedd.query(constraint="JobStatus == 1 && isUndefined(hpc_annex_name) && time() - EnteredCurrentStatus > 60",
+            self.idle_job_ads = schedd.query(constraint="JobStatus == 1 && isUndefined(hpc_annex_name) && time() - EnteredCurrentStatus > 60 && time() - EnteredCurrentStatus < 8*60*60",
                                             projection=["ClusterId, ProcId, RequestGPUs"])
         except Exception as err:
             print(f"Unable to query: {err}")
