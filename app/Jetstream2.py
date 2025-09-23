@@ -77,7 +77,8 @@ class Jetstream2:
 
     def provision(self, inst_type="cpu"):
 
-        flavor = "m3.large"
+        #flavor = "m3.large"
+        flavor = "m3.xl"
         start = "True"
         if inst_type == "gpu":
             flavor = "g3.medium"
@@ -100,8 +101,8 @@ START = {start}
 TestPool = True
 STARTD_ATTRS = TestPool \$(STARTD_ATTRS)
 
-# For workshops, keep resources around for longer
-STARTD_NOCLAIM_SHUTDOWN = 2 * 60 * 60
+# Only sit around emty for 30 minutes
+STARTD_NOCLAIM_SHUTDOWN = 30 * 60
 EOF
 
 cat >/etc/condor/tokens.d/access-pegasus.token <<EOF
@@ -116,11 +117,29 @@ condor_reconfig
 
         userdata = base64.b64encode(userdata.encode("utf-8")).decode("utf-8")
 
-        #image = self.cloud.image.find_image("ACCESS-Pegasus-Worker", ignore_missing=False)
+        #latest_image = None
+        #for image in self.cloud.image.images():
+        #    if image.name == "ACCESS-Pegasus-Worker":
+        #        latest_image = image
+        #        break
+        #if not latest_image:
+        #    print("No suitable image found, exiting")
+        #    sys.exit(1)
+        ## Use the latest image found
+        #image = latest_image
         image = self.cloud.image.find_image("98d9a658-9202-44c0-96d7-835c0f6fedda", ignore_missing=False)
+
         flavor = self.cloud.compute.find_flavor(flavor)
         network = self.cloud.network.find_network("auto_allocated_network")
         keypair = self.cloud.compute.find_keypair("rynge-2020")
+
+        # root volume
+        volume = self.cloud.block_storage.create_volume(
+            name=f"boot-{name}",
+            image_id=image.id,
+            size=100  # Size in GB; must be >= image size
+        )
+        self.cloud.block_storage.wait_for_status(volume, status='available')
 
         # need to reuse a floating IP
         #floating_ip = None
@@ -138,6 +157,13 @@ condor_reconfig
             image_id=image.id,
             flavor_id=flavor.id,
             networks=[{"uuid": network.id}],
+            block_device_mapping_v2=[{
+                "boot_index": 0,
+                "uuid": volume.id,
+                "source_type": "volume",
+                "destination_type": "volume",
+                "delete_on_termination": True
+            }],
             security_groups=[{"name": "default"}],
             key_name=keypair.name,
             user_data=userdata,
@@ -166,4 +192,16 @@ condor_reconfig
             # unable to add the floating ip, delete the server
             self.cloud.delete_server(server.name)
 
-    
+
+    def clean_dns(self):
+        # remove any old DNS entries
+        zone = self.cloud.dns.find_zone("a9cbdc1d-6560-40cc-b592-275e41e10086")
+        if zone:
+            for record in self.cloud.dns.recordsets(zone.id):
+                if re.match('^testpool-', record.name):
+                    print(f"Deleting DNS record {record.name}")
+                    try:
+                        self.cloud.dns.delete_recordset(record, zone.id)
+                    except Exception as e:
+                        print(f"Failed to delete DNS record {record.name}: {e}")
+                        return

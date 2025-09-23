@@ -25,6 +25,7 @@ def main():
         print("-----")
 
         jetstream2.clean()
+        jetstream2.clean_dns()
 
         cpu_instances, gpu_instances = jetstream2.instances()
         print(f"Instances: {cpu_instances} CPU, {gpu_instances} GPU")
@@ -33,13 +34,13 @@ def main():
         idle_gpu_jobs = condor.idle_gpu_jobs()
         print(f"Idle jobs: {idle_cpu_jobs} CPU, {idle_gpu_jobs} GPU")
     
-        if idle_cpu_jobs > 0 and cpu_instances < 2:
+        if idle_cpu_jobs > 0 and cpu_instances < 1:
             needed = min(idle_cpu_jobs, 1)
             for i in range(needed):
                 print("Provisioning a CPU instance")
                 jetstream2.provision(inst_type="cpu")
 
-        if idle_gpu_jobs > 0 and gpu_instances < 2:
+        if idle_gpu_jobs > 0 and gpu_instances < 1:
             needed = min(idle_gpu_jobs, 1)
             for i in range(needed):
                 print("Provisioning a GPU instance")
