@@ -90,6 +90,10 @@ class Jetstream2:
         name = f"testpool-{inst_type}-{now}"
 
         print(f"Creating new instance named {name}")
+        
+        max_idle_minutes = 30
+        if "MAX_IDLE_MINUTES" in os.environ:
+            max_idle_minutes = int(os.environ["MAX_IDLE_MINUTES"])
 
         userdata = f"""#!/bin/bash
 
@@ -102,7 +106,7 @@ TestPool = True
 STARTD_ATTRS = TestPool \$(STARTD_ATTRS)
 
 # Only sit around emty for 30 minutes
-STARTD_NOCLAIM_SHUTDOWN = 30 * 60
+STARTD_NOCLAIM_SHUTDOWN = {max_idle_minutes} * 60
 EOF
 
 cat >/etc/condor/tokens.d/access-pegasus.token <<EOF

@@ -19,6 +19,13 @@ def main():
 
     condor = HTCondor()
     jetstream2 = Jetstream2()
+    
+    max_cpu_instances = 1
+    max_gpu_instances = 1
+    if "MAX_CPU_INSTANCES" in os.environ:
+        max_cpu_instances = int(os.environ["MAX_CPU_INSTANCES"])
+    if "MAX_GPU_INSTANCES" in os.environ:
+        max_gpu_instances = int(os.environ["MAX_GPU_INSTANCES"])
 
     while True:
 
@@ -34,13 +41,13 @@ def main():
         idle_gpu_jobs = condor.idle_gpu_jobs()
         print(f"Idle jobs: {idle_cpu_jobs} CPU, {idle_gpu_jobs} GPU")
     
-        if idle_cpu_jobs > 0 and cpu_instances < 1:
+        if idle_cpu_jobs > 0 and cpu_instances < max_cpu_instances:
             needed = min(idle_cpu_jobs, 1)
             for i in range(needed):
                 print("Provisioning a CPU instance")
                 jetstream2.provision(inst_type="cpu")
 
-        if idle_gpu_jobs > 0 and gpu_instances < 1:
+        if idle_gpu_jobs > 0 and gpu_instances < max_gpu_instances:
             needed = min(idle_gpu_jobs, 1)
             for i in range(needed):
                 print("Provisioning a GPU instance")
