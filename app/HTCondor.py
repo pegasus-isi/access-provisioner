@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 
-import htcondor
+import htcondor2
 import re
 import sys
 import time
@@ -13,31 +13,18 @@ from datetime import datetime, timedelta
 class HTCondor:
 
     last_query = -1
-    collector = htcondor.Collector("pegasus.access-ci.org:9618")
-    idle_job_ads = []
+    collector = htcondor2.Collector("pegasus.access-ci.org:9618")
+    subs = {}
 
 
-    def idle_cpu_jobs(self):
+    def submitters(self):
         self.query()
-        count = 0
-        for ad in self.idle_job_ads:
-            if "RequestGPUs" not in ad or ad["RequestGPUs"] == 0:
-                count += 1
-        return count
-
-
-    def idle_gpu_jobs(self):
-        self.query()
-        count = 0
-        for ad in self.idle_job_ads:
-            if "RequestGPUs" in ad and ad["RequestGPUs"] > 0:
-                count += 1
-        return count
+        return self.subs
 
 
     def query(self):
         '''
-        query HTCondor and add up the idle job types
+        query HTCondor and add up the job types
         '''
 
         now = int(datetime.now().timestamp())
@@ -45,12 +32,32 @@ class HTCondor:
             return
         self.last_query = now
 
-        self.idle_job_ads = []
+        self.subs = {}
         try:
-            schedd_ad = self.collector.locate(htcondor.DaemonTypes.Schedd, "pegasus.access-ci.org")
-            schedd = htcondor.Schedd(schedd_ad)
-            self.idle_job_ads = schedd.query(constraint="JobStatus == 1 && isUndefined(hpc_annex_name) && time() - EnteredCurrentStatus > 60 && time() - EnteredCurrentStatus < 8*60*60",
-                                            projection=["ClusterId, ProcId, RequestGPUs"])
+            schedd_ad = self.collector.locate(htcondor2.DaemonTypes.Schedd, "pegasus.access-ci.org")
+            schedd = htcondor2.Schedd(schedd_ad)
+            ads = schedd.query(constraint="isUndefined(hpc_annex_name) && time() - EnteredCurrentStatus < 8*60*60",
+                               projection=["Owner, ClusterId, JobStatus, ProcId, RequestGPUs"])
+            for ad in ads:
+                if ad["Owner"] not in self.subs:
+                    s = {
+                        "idle_cpu_jobs": 0,
+                        "idle_gpu_jobs": 0,
+                        "running_cpu_jobs": 0,
+                        "running_gpu_jobs": 0
+                    }
+                    self.subs[ad["Owner"]] = s
+                s = self.subs[ad["Owner"]]
+                if ad["JobStatus"] == 1:
+                    if "RequestGPUs" in ad and ad["RequestGPUs"] > 0:
+                        s["idle_gpu_jobs"] += 1
+                    else:
+                        s["idle_cpu_jobs"] += 1
+                elif ad["JobStatus"] == 2:
+                    if "RequestGPUs" in ad and ad["RequestGPUs"] > 0:
+                        s["running_gpu_jobs"] += 1
+                    else:
+                        s["running_cpu_jobs"] += 1
         except Exception as err:
             print(f"Unable to query: {err}")
             return

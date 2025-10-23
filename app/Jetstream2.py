@@ -62,32 +62,38 @@ class Jetstream2:
 
     def instances(self):
 
-        cpus = 0
-        gpus = 0
+        insts = {}
+
         for server in self.cloud.compute.servers():
 
-            if re.match('^testpool-cpu', server.name):
-                cpus += 1
-            
-            if re.match('^testpool-gpu', server.name):
-                gpus += 1
+            m = re.match('^testpool-(cpu|gpu)-([a-zA-Z0-9_-]+)-', server.name)
+            if not m:
+                continue
+            inst_type = m.group(1)
+            owner = m.group(2)
 
-        return (cpus, gpus)
+            if owner not in insts:
+                insts[owner] = {
+                    "cpu": 0,
+                    "gpu": 0
+                }
+            insts[owner][inst_type] += 1
+
+        return insts
 
 
-    def provision(self, inst_type="cpu"):
+    def provision(self, owner,inst_type="cpu"):
 
-        #flavor = "m3.large"
-        flavor = "m3.xl"
-        start = "True"
+        flavor = "m3.small"
+        start = "Owner == \"%s\"" % owner
         if inst_type == "gpu":
             flavor = "g3.medium"
-            start = "TARGET.RequestGPUs > 0"
+            start = f"{start} && TARGET.RequestGPUs > 0"
 
         now = int(datetime.now().timestamp())
         dt = datetime.now()
         now = str(dt.strftime('%Y%m%d%H%M%S'))
-        name = f"testpool-{inst_type}-{now}"
+        name = f"testpool-{inst_type}-{owner}-{now}"
 
         print(f"Creating new instance named {name}")
         

@@ -34,24 +34,35 @@ def main():
         jetstream2.clean()
         jetstream2.clean_dns()
 
-        cpu_instances, gpu_instances = jetstream2.instances()
-        print(f"Instances: {cpu_instances} CPU, {gpu_instances} GPU")
+        print("Instances:")
+        insts = jetstream2.instances()
+        for owner, inst in insts.items():
+            print(f"  Owner: {owner:<30} {inst['cpu']:>3} CPU, {inst['gpu']:>3} GPU")
+            
+        print("Submitters:")
+        submitters = condor.submitters()
+        for owner, s in submitters.items():
+            idle_cpu_jobs = s["idle_cpu_jobs"]
+            idle_gpu_jobs = s["idle_gpu_jobs"]
+            running_cpu_jobs = s["running_cpu_jobs"]
+            running_gpu_jobs = s["running_gpu_jobs"]
+            cpu_instances = 0
+            gpu_instances = 0
+            if owner in insts:
+                cpu_instances = insts[owner]["cpu"]
+                gpu_instances = insts[owner]["gpu"]
+            print(f"  Owner: {owner:<30} CPU: {idle_cpu_jobs:>4} idle, {running_cpu_jobs:>4} running   GPU: {idle_gpu_jobs:>4} idle, {running_gpu_jobs:>4} running")
 
-        idle_cpu_jobs = condor.idle_cpu_jobs()
-        idle_gpu_jobs = condor.idle_gpu_jobs()
-        print(f"Idle jobs: {idle_cpu_jobs} CPU, {idle_gpu_jobs} GPU")
-    
-        if idle_cpu_jobs > 0 and cpu_instances < max_cpu_instances:
-            needed = min(idle_cpu_jobs, 1)
-            for i in range(needed):
-                print("Provisioning a CPU instance")
-                jetstream2.provision(inst_type="cpu")
+            # provision instances as needed
+            if running_cpu_jobs < 5:
+                if idle_cpu_jobs > 0 and cpu_instances < max_cpu_instances:
+                    print("    Provisioning a CPU instance")
+                    jetstream2.provision(owner, inst_type="cpu")
 
-        if idle_gpu_jobs > 0 and gpu_instances < max_gpu_instances:
-            needed = min(idle_gpu_jobs, 1)
-            for i in range(needed):
-                print("Provisioning a GPU instance")
-                jetstream2.provision(inst_type="gpu")
+            if running_gpu_jobs < 5:
+                if idle_gpu_jobs > 0 and gpu_instances < max_gpu_instances:
+                    print("    Provisioning a GPU instance")
+                    jetstream2.provision(owner, inst_type="gpu")
 
         time.sleep(30)
 
