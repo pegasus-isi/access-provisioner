@@ -84,8 +84,13 @@ class Jetstream2:
 
     def provision(self, owner,inst_type="cpu"):
 
-        flavor = "m3.small"
-        start = "Owner == \"%s\"" % owner
+        if owner == "shared":
+            start = "True && Owner != \"otrang\""
+            flavor = "m3.large"
+        else:
+            start = "Owner == \"%s\"" % owner
+            flavor = "m3.small"
+        
         if inst_type == "gpu":
             flavor = "g3.medium"
             start = f"{start} && TARGET.RequestGPUs > 0"
