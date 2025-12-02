@@ -89,7 +89,10 @@ class Jetstream2:
             flavor = "m3.large"
         else:
             start = "Owner == \"%s\"" % owner
-            flavor = "m3.small"
+            if owner == "wgatlin":
+                flavor = "m3.xl"
+            else:
+                flavor = "m3.small"
         
         if inst_type == "gpu":
             flavor = "g3.medium"

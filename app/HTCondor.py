@@ -36,7 +36,7 @@ class HTCondor:
         try:
             schedd_ad = self.collector.locate(htcondor2.DaemonTypes.Schedd, "pegasus.access-ci.org")
             schedd = htcondor2.Schedd(schedd_ad)
-            ads = schedd.query(constraint="isUndefined(hpc_annex_name) && time() - EnteredCurrentStatus < 8*60*60",
+            ads = schedd.query(constraint="isUndefined(hpc_annex_name) && time() - EnteredCurrentStatus < 24*60*60",
                                projection=["Owner, ClusterId, JobStatus, ProcId, RequestGPUs"])
             for ad in ads:
                 if ad["Owner"] not in self.subs:
