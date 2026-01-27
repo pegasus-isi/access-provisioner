@@ -92,7 +92,7 @@ class Jetstream2:
             if owner == "wgatlin":
                 flavor = "m3.xl"
             else:
-                flavor = "m3.small"
+                flavor = "m3.medium"
         
         if inst_type == "gpu":
             flavor = "g3.medium"
