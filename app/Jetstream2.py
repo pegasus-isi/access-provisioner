@@ -152,25 +152,36 @@ condor_reconfig
         keypair = self.cloud.compute.find_keypair("rynge-2020")
 
         # root volume
-        #volume = self.cloud.block_storage.create_volume(
-        #    name=f"boot-{name}",
-        #    image_id=image.id,
-        #    size=100  # Size in GB; must be >= image size
-        #)
-        #self.cloud.block_storage.wait_for_status(volume, status='available')
+        volume = self.cloud.block_storage.create_volume(
+            name=f"boot-{name}",
+            image_id=image.id,
+            size=100  # Size in GB; must be >= image size
+        )
+        self.cloud.block_storage.wait_for_status(volume, status='available')
+
+        # need to reuse a floating IP
+        #floating_ip = None
+        #for fip in self.cloud.list_floating_ips():
+        #    #print(fip)
+        #    if re.match("^testpool", fip.description) and fip.status == "DOWN":
+        #        floating_ip = fip
+        #        break
+        #if floating_ip == None:
+        #    print("No floating IP found. Can't create new server")
+        #    return
 
         server = self.cloud.compute.create_server(
             name=name,
             image_id=image.id,
             flavor_id=flavor.id,
             networks=[{"uuid": network.id}],
-            #block_device_mapping_v2=[{
-            #    "boot_index": 0,
-            #    "uuid": volume.id,
-            #    "source_type": "volume",
-            #    "destination_type": "volume",
-            #    "delete_on_termination": True
-            #}],
+            block_device_mapping_v2=[{
+                "boot_index": 0,
+                "uuid": volume.id,
+                "source_type": "volume",
+                "destination_type": "volume",
+                "delete_on_termination": True
+            }],
             security_groups=[{"name": "default"}],
             key_name=keypair.name,
             user_data=userdata,

@@ -9,7 +9,7 @@ RUN apt update -y && \
     && \
     apt clean -y
 
-RUN echo "deb [trusted=yes] https://research.cs.wisc.edu/htcondor/repo/debian/25.x bookworm main" >/etc/apt/sources.list.d/htcondor.list && \
+RUN echo "deb [trusted=yes] https://research.cs.wisc.edu/htcondor/repo/debian/24.x bookworm main" >/etc/apt/sources.list.d/htcondor.list && \
     apt update -y && \
     apt install -y condor
 
